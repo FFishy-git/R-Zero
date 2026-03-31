@@ -41,6 +41,19 @@ python scripts/model_merger.py --local_dir ${STORAGE_PATH}/models/$save_path/glo
 
 sleep 10
 
+# Clean up FSDP shards to save disk (only merged HF model needed for next iteration)
+if [ "${RZERO_KEEP_SHARDS:-0}" != "1" ]; then
+  echo "cleaning up FSDP shards (set RZERO_KEEP_SHARDS=1 to keep)"
+  for ckpt_dir in ${STORAGE_PATH}/models/$save_path/global_step_*/actor; do
+    if [ -d "$ckpt_dir/huggingface" ]; then
+      rm -f "$ckpt_dir"/model_world_size_*.pt
+      rm -f "$ckpt_dir"/optim_world_size_*.pt
+      rm -f "$ckpt_dir"/extra_state_world_size_*.pt
+      echo "  cleaned $ckpt_dir"
+    fi
+  done
+fi
+
 pkill python
 
 echo "questioner training finished"
