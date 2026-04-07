@@ -50,7 +50,18 @@ if not args.repo_name == "":
     dataset_dict = {"train": train_dataset}
     config_name = f"{args.experiment_name}"
     dataset = DatasetDict(dataset_dict)
-    dataset.push_to_hub(f"{HUGGINGFACENAME}/{args.repo_name}",private=True,config_name=config_name)
+
+    # Save locally for training (avoids needing HF Hub write access)
+    local_ds_path = f"{STORAGE_PATH}/datasets/{args.repo_name}"
+    os.makedirs(local_ds_path, exist_ok=True)
+    dataset.save_to_disk(local_ds_path)
+    print(f"Dataset saved locally: {local_ds_path} ({len(filtered_datas)} samples)")
+
+    # Also try to push to HF Hub (non-fatal if token lacks write perms)
+    try:
+        dataset.push_to_hub(f"{HUGGINGFACENAME}/{args.repo_name}",private=True,config_name=config_name)
+    except Exception as e:
+        print(f"WARNING: HF Hub push failed (non-fatal): {e}")
 
 
 

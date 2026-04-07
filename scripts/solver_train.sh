@@ -21,7 +21,7 @@ python3 -m verl.trainer.main \
     worker.actor.model.model_path=$solver_model_path \
     trainer.experiment_name=${experiment_name} \
     trainer.save_checkpoint_path=${STORAGE_PATH}/models/${experiment_name}/ \
-    data.train_files=${HUGGINGFACENAME}/${experiment_name}@train \
+    data.train_files=${STORAGE_PATH}/datasets/${experiment_name}@train \
     trainer.total_epochs=100 \
     trainer.max_steps=20 \
     data.format_prompt=./examples/format_prompt/solver.jinja \

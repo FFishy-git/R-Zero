@@ -68,9 +68,11 @@ def cluster_share_per_problem(
     return proportions
 
 def generate_temp_filename(prefix="temp", suffix=".json"):
-    timestamp = int(time.time() * 1000) 
+    timestamp = int(time.time() * 1000)
     rand_part = random.randint(0, 99999)
-    return f"{STORAGE_PATH}/temp_results/{prefix}_{timestamp}_{rand_part}{suffix}"
+    temp_dir = f"{STORAGE_PATH}/temp_results"
+    os.makedirs(temp_dir, exist_ok=True)
+    return f"{temp_dir}/{prefix}_{timestamp}_{rand_part}{suffix}"
 def split_list(lst, n=4):
     k, m = divmod(len(lst), n)
     return [lst[i*k + min(i, m):(i+1)*k + min(i+1, m)] for i in range(n)]
