@@ -106,7 +106,8 @@ if tokenizer.chat_template:
 else:
     prompts = ["system: " + chat[0]["content"] + '\n' + "user: " + chat[1]["content"] for chat in chats]
 
-responses = model.generate(prompts, sampling_params=sample_params, use_tqdm=True)
+# tqdm output from 8 concurrent evaluators can block on the pod log pipe.
+responses = model.generate(prompts, sampling_params=sample_params, use_tqdm=False)
 print(f"[{args.suffix}] Generation complete.")
 
 # 4. Process and Grade Responses

@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from jinja2 import Template
 from PIL import Image
 from PIL.Image import Image as ImageObject
@@ -113,8 +113,19 @@ class RLHFDataset(Dataset):
             data_split = "train"
 
         if os.path.isdir(data_path):
-            # when we use dataset builder, we should always refer to the train split
-            self.dataset = load_dataset("parquet", data_dir=data_path, split="train")
+            saved_dataset_markers = (
+                os.path.join(data_path, "dataset_dict.json"),
+                os.path.join(data_path, "state.json"),
+            )
+            if any(os.path.exists(marker) for marker in saved_dataset_markers):
+                loaded_dataset = load_from_disk(data_path)
+                if hasattr(loaded_dataset, "keys") and data_split in loaded_dataset:
+                    self.dataset = loaded_dataset[data_split]
+                else:
+                    self.dataset = loaded_dataset
+            else:
+                # when we use dataset builder, we should always refer to the train split
+                self.dataset = load_dataset("parquet", data_dir=data_path, split="train")
         elif os.path.isfile(data_path):
             self.dataset = load_dataset("parquet", data_files=data_path, split="train")
         else:

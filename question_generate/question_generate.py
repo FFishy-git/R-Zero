@@ -120,6 +120,7 @@ def main(args):
                 results.append({"question": response, "answer": "", "score": -1})
         except:
             results.append({"question": response, "answer": "", "score": -1})
+    os.makedirs(f"{STORAGE_PATH}/generated_question", exist_ok=True)
     with open(f"{STORAGE_PATH}/generated_question/{args.save_name}_{args.suffix}.json", "w") as f:
         json.dump(results, f, indent=4)
 

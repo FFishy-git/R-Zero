@@ -218,7 +218,7 @@ class GPQA_DatasetHandler(DatasetHandler):
         super().__init__(answer_pattern)
     
     def load_data(self):
-        dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond",'train')
+        dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond", split="train")
         examples = []
         
         for row in dataset:

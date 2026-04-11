@@ -32,7 +32,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=str, default='5000')
 parser.add_argument('--model_path', type=str, default='Qwen/Qwen3-4B-Base')
 parser.add_argument('--gpu_mem_util', type=float, default=0.8,
-                    help='The maximum GPU memory utilization fraction for vLLM.')
+	                    help='The maximum GPU memory utilization fraction for vLLM.')
+parser.add_argument(
+    '--enable-idle-worker',
+    action='store_true',
+    help='Enable the background GPU idle worker that runs matmul when the server is idle.',
+)
 args = parser.parse_args()
 
 # ------------------------- vLLM Initialization ------------------------ #
@@ -89,8 +94,12 @@ def gpu_idle_worker():
             time.sleep(1)
     print('[idle_worker] GPU idle worker stopped.')
 
-idle_thread = threading.Thread(target=gpu_idle_worker, daemon=True)
-idle_thread.start()
+idle_thread = None
+if args.enable_idle_worker:
+    idle_thread = threading.Thread(target=gpu_idle_worker, daemon=True)
+    idle_thread.start()
+else:
+    print('[idle_worker] Disabled.')
 
 # ------------------------ Timeout Utility (Refactored) --------------------------- #
 # 2. Use the 'stopit.threading_timeoutable' decorator for thread-safe timeouts.
@@ -112,8 +121,9 @@ def hello():
     '''The main processing endpoint: reads a task file, invokes vLLM, consolidates answers, and writes results.'''
 
     # --- Pause the GPU idle worker to free up resources ---
-    pause_event.set()
-    torch.cuda.synchronize()
+    if args.enable_idle_worker:
+        pause_event.set()
+        torch.cuda.synchronize()
 
     name = request.args.get('name', 'None')
     print(f'[server] Received request for task file: {name}')
@@ -252,8 +262,11 @@ def hello():
         json.dump(results_all, f, indent=4)
 
     # --- Resume the GPU idle worker ---
-    pause_event.clear()
-    print(f'[server] Processed {name}, results saved to {out_path}. Resuming idle worker.')
+    if args.enable_idle_worker:
+        pause_event.clear()
+        print(f'[server] Processed {name}, results saved to {out_path}. Resuming idle worker.')
+    else:
+        print(f'[server] Processed {name}, results saved to {out_path}.')
     return jsonify({'message': f'Processed {name}, results saved to {out_path}.'})
 
 # ------------------------- Main Application Entrypoint --------------------------- #
@@ -264,5 +277,6 @@ if __name__ == '__main__':
     finally:
         # Gracefully shut down the background thread on exit
         stop_event.set()
-        idle_thread.join()
+        if idle_thread is not None:
+            idle_thread.join()
         print('[main] Application shutdown complete.')

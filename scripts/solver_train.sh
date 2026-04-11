@@ -4,6 +4,14 @@ experiment_name=$3
 
 echo $STORAGE_PATH
 
+# Ensure the storage tree expected by question generation/evaluation exists.
+mkdir -p \
+    "${STORAGE_PATH}/generated_question" \
+    "${STORAGE_PATH}/datasets" \
+    "${STORAGE_PATH}/models" \
+    "${STORAGE_PATH}/evaluation" \
+    "${STORAGE_PATH}/temp_results"
+
 echo "start train solver $experiment_name $solver_model_path $questioner_model_path" 
 
 export VLLM_DISABLE_COMPILE_CACHE=1
