@@ -107,7 +107,19 @@ class FSDPCheckpointManager(BaseCheckpointManager):
             os.makedirs(hf_path, exist_ok=True)
             assert isinstance(self.model._fsdp_wrapped_module, PreTrainedModel)
             self.model._fsdp_wrapped_module.config.save_pretrained(hf_path)
-            self.model._fsdp_wrapped_module.generation_config.save_pretrained(hf_path)
+            # Some models (e.g. OLMo-3-Instruct-SFT) ship a generation_config with
+            # do_sample=False but non-default temperature/top_p/top_k. transformers
+            # 4.57's save_pretrained rejects this combination. Flip do_sample=True
+            # when sampling params are set so the save succeeds.
+            gen_cfg = self.model._fsdp_wrapped_module.generation_config
+            has_sampling = (
+                getattr(gen_cfg, "temperature", 1.0) != 1.0
+                or getattr(gen_cfg, "top_p", 1.0) != 1.0
+                or getattr(gen_cfg, "top_k", 50) != 50
+            )
+            if has_sampling and not getattr(gen_cfg, "do_sample", False):
+                gen_cfg.do_sample = True
+            gen_cfg.save_pretrained(hf_path)
             self.processing_class.save_pretrained(hf_path)
 
         dist.barrier()
