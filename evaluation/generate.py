@@ -19,11 +19,26 @@ def main(args):
         tokenizer=args.model,
         gpu_memory_utilization=0.85
     )
-    sample_params = vllm.SamplingParams(
-        max_tokens=4096,
-        temperature=0.0,
-        stop_token_ids=[tokenizer.eos_token_id],
-    )
+    # AIME paper protocol uses mean@32 with stochastic sampling (T=0.7, top_p=0.8,
+    # top_k=20). datasets_loader.py already repeats AIME questions ×32, so the
+    # 30q × 32 = 960 prompts produce 32 distinct sampled responses per question
+    # under these params, and the handler's get_score() average over 960 entries
+    # is exactly mean@32. Other tasks (math/gsm8k/amc/minerva/olympiad) keep the
+    # original greedy protocol so existing baseline numbers stay valid.
+    if args.dataset in ("aime2024", "aime2025"):
+        sample_params = vllm.SamplingParams(
+            max_tokens=4096,
+            temperature=0.7,
+            top_p=0.8,
+            top_k=20,
+            stop_token_ids=[tokenizer.eos_token_id],
+        )
+    else:
+        sample_params = vllm.SamplingParams(
+            max_tokens=4096,
+            temperature=0.0,
+            stop_token_ids=[tokenizer.eos_token_id],
+        )
     handler = datasets_loader.get_dataset_handler(args.dataset,args.name)
     questions, answers = handler.load_data()
     chats=[[{"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},{"role": "user", "content": question}] for question in questions]
