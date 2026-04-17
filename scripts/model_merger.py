@@ -26,6 +26,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoModelForTokenClassification,
     AutoModelForVision2Seq,
+    GenerationConfig,
     PretrainedConfig,
     PreTrainedModel,
 )
@@ -178,6 +179,24 @@ if __name__ == "__main__":
 
     assert isinstance(model, PreTrainedModel)
     model.to_empty(device="cpu")
+
+    # Some models (e.g. OLMo-3-Instruct-SFT) ship a generation_config with
+    # do_sample=False but non-default sampling params, which fails validation
+    # in save_pretrained. Load the checkpoint's generation_config and flip
+    # do_sample=True when sampling params are set.
+    if model.can_generate():
+        try:
+            gen_cfg = GenerationConfig.from_pretrained(hf_path)
+            has_sampling = (
+                getattr(gen_cfg, "temperature", 1.0) != 1.0
+                or getattr(gen_cfg, "top_p", 1.0) != 1.0
+                or getattr(gen_cfg, "top_k", 50) != 50
+            )
+            if has_sampling and not getattr(gen_cfg, "do_sample", False):
+                gen_cfg.do_sample = True
+            model.generation_config = gen_cfg
+        except Exception as e:
+            print(f"[model_merger] Could not load generation_config from {hf_path}: {e}")
 
     print(f"Saving model to {hf_path}...")
     model.save_pretrained(hf_path, state_dict=state_dict)
