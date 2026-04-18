@@ -57,4 +57,10 @@ fi
 
 echo "solver training finished"
 
-bash evaluation/evaluate.bash ${STORAGE_PATH}/models/${experiment_name}/global_step_15/actor/huggingface
+# Per-iteration eval disabled to speed up multi-iteration R-Zero loops (OLMo on
+# vLLM transformers fallback makes supergpqa+bbeh+mmlupro take 15-20h per
+# iteration, which dominates the 5-iter wall clock). Run eval separately on the
+# final merged checkpoint if needed. Re-enable by removing this guard.
+if [ "${RZERO_SKIP_PER_ITER_EVAL:-1}" != "1" ]; then
+  bash evaluation/evaluate.bash ${STORAGE_PATH}/models/${experiment_name}/global_step_15/actor/huggingface
+fi

@@ -23,4 +23,9 @@ for i in {2..5}; do
         ${Model_abbr}_solver_v${i}
 done
 
-bash evaluation/evaluate.bash $Base_model
+# Final base-model eval disabled by default (same RZERO_SKIP_PER_ITER_EVAL
+# guard as per-iteration evals). Evaluates the untrained base model, which is
+# a reference baseline that can be run standalone after the co-evolution loop.
+if [ "${RZERO_SKIP_PER_ITER_EVAL:-1}" != "1" ]; then
+  bash evaluation/evaluate.bash $Base_model
+fi
