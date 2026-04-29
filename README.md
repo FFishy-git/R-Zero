@@ -85,6 +85,26 @@ You can replicate all of our experimental results with a single script.
 bash scripts/main.sh Qwen/Qwen3-4B-Base qwen3-4b
 ```
 
+### Retrieve Local SER Checkpoints
+
+The locally saved SER checkpoints were uploaded to the Hugging Face dataset
+[`Siyuc/SER`](https://huggingface.co/datasets/Siyuc/SER). To retrieve one later,
+download the desired subfolder into a local checkpoint directory:
+
+```bash
+mkdir -p checkpoints/hf
+huggingface-cli download Siyuc/SER \
+  --repo-type dataset \
+  --include "Rzero_qwen3_8b_base/*" \
+  --local-dir checkpoints/hf
+```
+
+Available R-Zero folders:
+
+- `Rzero_qwen3_4b_base`: merged Hugging Face checkpoint from Qwen3-4B solver step 15.
+- `Rzero_qwen3_8b_base`: merged Hugging Face checkpoint from Qwen3-8B solver step 15.
+- `Rzero_olmo3_7b_base`: merged Hugging Face checkpoint from OLMo-3-7B solver step 15.
+
 ## 📊 Impressive Results
 
 The table below compares the performance of the Base Model, a Zero-Shot Challenger baseline, and our iterative R-Zero framework. Peak performance for each model is highlighted in **bold**.
